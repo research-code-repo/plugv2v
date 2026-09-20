@@ -578,6 +578,10 @@ var GAL={"IC": {"nonpc": [{"route": "r23_town05_ins_oppo", "file": "IC_nonpc_r23
         '<span class="chip-ds">'+Math.round(r.bds)+'→'+Math.round(r.pds)+'</span></button>';
     }).join("");
     var r=rr[idx]; if(!r) return;
+    var stem=r.file.replace(/\.mp4$/,"");
+    // preload="metadata" alone paints a black box until play; show the real first frame
+    vb.poster="media/gallery/baseline_"+stem+".jpg";
+    vp.poster="media/gallery/plugv2v_"+stem+".jpg";
     vb.src="media/gallery/baseline_"+r.file;
     vp.src="media/gallery/plugv2v_"+r.file;
     cap.textContent=CATN[cat]+" · "+(cond==="npc"?"with background traffic":"cooperative vehicles only")

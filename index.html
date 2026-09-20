@@ -4,35 +4,633 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PlugV2V</title>
+<meta name="description" content="A plug-in vision-language-model-based semantic V2V cooperation agent for autonomous driving.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
 <style>
-  :root { --fg:#1a1a1a; --muted:#666; --line:#e5e5e5; --accent:#0b5fff; }
-  body { margin:0; padding:0 20px; font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; color:var(--fg); background:#fff; }
-  main { max-width:760px; margin:0 auto; padding:64px 0 96px; }
-  h1 { font-size:2rem; line-height:1.25; margin:0 0 .4em; letter-spacing:-.01em; }
-  .sub { color:var(--muted); font-size:1.05rem; margin:0 0 2rem; }
-  .note { border:1px solid var(--line); border-radius:8px; padding:16px 18px; color:var(--muted); background:#fafafa; }
-  h2 { font-size:1.05rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:2.5rem 0 .6rem; }
-  footer { margin-top:4rem; padding-top:1rem; border-top:1px solid var(--line); color:var(--muted); font-size:.9rem; }
-  a { color:var(--accent); }
+:root{
+  --ink:#141a20; --ink-2:#4d5a67; --ink-3:#7b8894;
+  --bg:#fcfdfe; --surface:#ffffff; --wash:#f2f5f9; --wash-2:#e8edf4;
+  --line:#dde4ec; --line-2:#c6d1de;
+  --accent:#15529e; --accent-2:#1e78d2; --accent-wash:#e8f0fa;
+  --ours:#d4edda; --ours-line:#a9d7b6;
+  --t0:#c0392b; --slow:#b06a0c; --norm:#1e78d2; --fast:#1b8039;
+  --disp:"Newsreader",Georgia,serif;
+  --ui:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --shadow:0 1px 2px rgba(20,26,32,.04), 0 8px 24px -12px rgba(20,26,32,.14);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --ink:#eef2f6; --ink-2:#a9b6c3; --ink-3:#7c8996;
+    --bg:#0d1116; --surface:#141a21; --wash:#171e26; --wash-2:#1d262f;
+    --line:#26303a; --line-2:#33404c;
+    --accent:#6aa9ee; --accent-2:#8cc2f6; --accent-wash:#0f1d2e;
+    --ours:#16301f; --ours-line:#2c5a3a;
+    --t0:#ef7a6d; --slow:#e3a33c; --norm:#5fa8f2; --fast:#4fc079;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6);
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; scroll-padding-top:74px}
+body{margin:0; background:var(--bg); color:var(--ink); font-family:var(--ui);
+  font-size:16.5px; line-height:1.65; -webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--disp); font-weight:600; letter-spacing:-.015em; line-height:1.15; margin:0}
+p{margin:0 0 1.05rem}
+a{color:var(--accent); text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+
+/* ---------- nav ---------- */
+.nav{position:sticky; top:0; z-index:50; background:color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter:saturate(180%) blur(12px); border-bottom:1px solid var(--line)}
+.nav-in{max-width:1280px; margin:0 auto; padding:13px 24px; display:flex; align-items:center; gap:22px}
+.brand{font-family:var(--disp); font-weight:700; font-size:19px; letter-spacing:-.02em; color:var(--ink)}
+.brand:hover{text-decoration:none}
+.nav-links{margin-left:auto; display:flex; gap:22px; font-size:14px; font-weight:500}
+.nav-links a{color:var(--ink-2)}
+.nav-links a:hover{color:var(--accent); text-decoration:none}
+@media (max-width:760px){.nav-links{display:none}}
+
+/* ---------- hero ---------- */
+.hero{background:linear-gradient(180deg, var(--wash) 0%, var(--bg) 78%); border-bottom:1px solid var(--line)}
+.hero-in{max-width:1280px; margin:0 auto; padding:52px 24px 46px;
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.02fr); gap:48px; align-items:center}
+@media (max-width:940px){.hero-in{grid-template-columns:minmax(0,1fr); gap:30px; padding-top:38px}}
+.pill{display:inline-block; font-family:var(--mono); font-size:10.5px; font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--accent);
+  background:var(--accent-wash); border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);
+  padding:5px 11px; border-radius:999px; margin-bottom:18px}
+.hero h1{font-size:clamp(31px,4.3vw,50px); margin-bottom:16px}
+.hero h1 .nm{color:var(--accent)}
+.hero .lede{font-size:17.5px; color:var(--ink-2); max-width:52ch; margin-bottom:22px}
+.hero .lede b{color:var(--ink); font-weight:600}
+.anon{font-family:var(--mono); font-size:12px; color:var(--ink-3); letter-spacing:.03em;
+  border-top:1px solid var(--line); padding-top:14px; margin-top:4px}
+
+.btns{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:24px}
+.btn{display:inline-flex; align-items:center; gap:8px; font-family:var(--ui); font-size:14px; font-weight:600;
+  padding:10px 17px; border-radius:999px; border:1px solid var(--line-2); background:var(--surface);
+  color:var(--ink); box-shadow:var(--shadow); transition:transform .12s ease, border-color .12s ease}
+.btn:hover{text-decoration:none; transform:translateY(-1px); border-color:var(--accent)}
+.btn.primary{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.btn.primary:hover{border-color:var(--ink)}
+.btn.soon{opacity:.52; cursor:default; box-shadow:none}
+.btn.soon:hover{transform:none; border-color:var(--line-2)}
+.btn svg{width:15px; height:15px; flex:none}
+
+.teaser{background:var(--surface); border:1px solid var(--line); border-radius:14px;
+  padding:14px; box-shadow:var(--shadow)}
+.teaser img{width:100%; height:auto; display:block; border-radius:7px}
+.teaser figcaption{font-size:12.5px; color:var(--ink-3); margin:11px 2px 1px; line-height:1.5}
+
+/* ---------- layout ---------- */
+section{max-width:1280px; margin:0 auto; padding:58px 24px 0}
+section:last-of-type{padding-bottom:64px}
+.h-lab{font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--accent); margin-bottom:10px}
+section h2{font-size:clamp(24px,3vw,32px); margin-bottom:18px}
+.narrow{max-width:92ch}
+/* the abstract reads as a paper abstract: two columns once there is room */
+.cols2{columns:2; column-gap:44px; max-width:none}
+.cols2 p{break-inside:avoid}
+@media (max-width:900px){.cols2{columns:1}}
+.narrow p{color:var(--ink-2)}
+.narrow p b{color:var(--ink); font-weight:600}
+
+/* ---------- tldr + cards ---------- */
+.tldr{border-left:3px solid var(--accent); background:var(--wash); border-radius:0 10px 10px 0;
+  padding:18px 22px; margin:0 0 30px}
+.tldr .k{font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--accent); margin-bottom:6px}
+.tldr p{margin:0; color:var(--ink-2)}
+.tldr b{color:var(--ink); font-weight:600}
+
+.cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(265px,1fr)); gap:18px; margin-top:6px}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:20px 21px;
+  box-shadow:var(--shadow)}
+.card .n{font-family:var(--mono); font-size:11px; font-weight:700; color:var(--accent); margin-bottom:9px}
+.card h3{font-size:18px; margin-bottom:8px}
+.card p{font-size:14.5px; color:var(--ink-2); margin:0}
+
+/* ---------- tokens ---------- */
+.tokrow{display:flex; flex-wrap:wrap; gap:9px; margin:4px 0 20px}
+.tok{font-family:var(--mono); font-size:12.5px; font-weight:500; padding:6px 12px; border-radius:7px;
+  border:1px solid currentColor; background:var(--surface)}
+.tok.t0{color:var(--t0)} .tok.slow{color:var(--slow)} .tok.norm{color:var(--norm)} .tok.fast{color:var(--fast)}
+.spec{display:flex; flex-wrap:wrap; gap:26px; font-family:var(--mono); font-size:12.5px; color:var(--ink-3);
+  border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:14px 0; margin:6px 0 4px}
+.spec b{color:var(--ink); font-weight:700}
+
+/* ---------- figures ---------- */
+figure.wide{margin:26px 0 8px; background:var(--surface); border:1px solid var(--line);
+  border-radius:14px; padding:14px; box-shadow:var(--shadow)}
+figure.wide img{width:100%; height:auto; display:block; border-radius:7px}
+figure.wide figcaption{font-size:13px; color:var(--ink-3); margin:12px 4px 2px; line-height:1.55}
+figure.wide figcaption b{color:var(--ink-2); font-weight:600}
+
+/* ---------- tables ---------- */
+.tbl-wrap{overflow-x:auto; margin:8px 0 6px; border:1px solid var(--line); border-radius:12px;
+  background:var(--surface); box-shadow:var(--shadow)}
+table{border-collapse:collapse; width:100%; font-size:14px; min-width:520px}
+th.sortable{cursor:pointer; user-select:none}
+th.sortable:hover{color:var(--accent)}
+th.sortable.on{color:var(--accent)}
+th.sortable .ar{opacity:.45; font-size:9px; margin-left:3px}
+th.sortable.on .ar{opacity:1}
+.type{font-family:var(--mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--ink-3); border:1px solid var(--line); border-radius:999px; padding:2px 8px; white-space:nowrap}
+.type.ours{color:var(--accent); border-color:var(--accent)}
+.venue{color:var(--ink-3); font-size:11.5px; font-style:italic; margin-left:6px}
+table.sota th,table.sota td{padding:7px 8px}
+table.sota thead tr:first-child th{border-bottom:1px solid var(--line-2); text-align:center}
+table.sota thead tr:first-child th[rowspan]{text-align:left; vertical-align:bottom}
+table.sota td.num{font-size:12px}
+th,td{text-align:right; padding:9px 14px; border-bottom:1px solid var(--line); white-space:nowrap}
+th:first-child,td:first-child{text-align:left; white-space:normal}
+thead th{font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3); background:var(--wash)}
+tbody tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:13.5px}
+tr.ours td{background:var(--ours); font-weight:600; border-bottom-color:var(--ours-line)}
+tr.ours td:first-child{color:inherit}
+tr.grp td{font-family:var(--mono); font-size:10px; letter-spacing:.11em; text-transform:uppercase;
+  color:var(--ink-3); background:var(--wash); padding:7px 14px}
+.cap{font-size:12.8px; color:var(--ink-3); margin:11px 2px 0; line-height:1.55}
+
+/* ---------- demo switcher ---------- */
+.demo-ctl{display:flex; flex-wrap:wrap; gap:18px; align-items:center; margin:4px 0 20px}
+.seg{display:inline-flex; background:var(--wash); border:1px solid var(--line); border-radius:999px; padding:3px}
+.seg button{font-family:var(--ui); font-size:13.5px; font-weight:600; color:var(--ink-2);
+  background:none; border:0; padding:7px 16px; border-radius:999px; cursor:pointer; transition:all .14s ease}
+.seg button[aria-pressed="true"]{background:var(--surface); color:var(--accent); box-shadow:var(--shadow)}
+.seg-lab{font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--ink-3)}
+.routes{flex-wrap:wrap; max-width:100%}
+.chip-ds{margin-left:8px; color:var(--ink-3); font-size:10.5px}
+.routes button[aria-pressed=true] .chip-ds{color:var(--accent)}
+.routes button{font-family:var(--mono); font-size:11.5px; padding:6px 12px}
+.syncbar{display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:0 0 14px}
+.sbtn{display:inline-flex; align-items:center; gap:7px; font-family:var(--ui); font-size:13.5px;
+  font-weight:600; padding:8px 15px; border-radius:999px; border:1px solid var(--line-2);
+  background:var(--surface); color:var(--ink); cursor:pointer; box-shadow:var(--shadow);
+  transition:transform .12s ease, border-color .12s ease}
+.sbtn:hover{transform:translateY(-1px); border-color:var(--accent)}
+.sbtn.primary{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.sbtn svg{width:14px; height:14px; flex:none}
+.synchint{font-family:var(--mono); font-size:11px; color:var(--ink-3); margin-left:4px}
+.pair{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+@media (max-width:820px){.pair{grid-template-columns:1fr}}
+.pane{background:var(--surface); border:1px solid var(--line); border-radius:14px;
+  padding:12px; box-shadow:var(--shadow)}
+.pane video{width:100%; aspect-ratio:3/2; object-fit:contain; background:#0b0e12;
+  border-radius:7px; display:block}
+.phd{font-size:14px; font-weight:600; margin:0 2px 9px; display:flex; gap:9px; align-items:baseline}
+.phd span{font-family:var(--mono); font-size:10.5px; font-weight:500; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink-3)}
+.phd.on{color:var(--accent)}
+.phd.on span{color:var(--accent)}
+.stage{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px;
+  box-shadow:var(--shadow)}
+.stage video{width:100%; max-height:62vh; display:block; border-radius:7px; background:#0b0e12}
+.stage .meta{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:baseline; margin:12px 4px 2px}
+.stage .meta .t{font-weight:600; font-size:14.5px}
+.stage .meta .d{font-size:13px; color:var(--ink-3)}
+
+/* ---------- bibtex ---------- */
+pre.bib{background:var(--wash); border:1px solid var(--line); border-radius:12px; padding:18px 20px;
+  overflow-x:auto; font-family:var(--mono); font-size:12.5px; line-height:1.7; color:var(--ink-2); margin:0}
+
+footer{border-top:1px solid var(--line); margin-top:64px}
+.foot-in{max-width:1280px; margin:0 auto; padding:26px 24px 44px;
+  font-family:var(--mono); font-size:11.5px; color:var(--ink-3); letter-spacing:.03em}
 </style>
 </head>
 <body>
-<main>
-  <h1>PlugV2V</h1>
-  <p class="sub">A Plug-In Vision-Language-Model-Based Semantic Cooperation Agent for Autonomous Driving</p>
 
-  <div class="note">
-    <strong>Under review.</strong> This page accompanies an anonymous conference submission.
-    Code, prompts, and evaluation scripts will be released here.
+<!-- ============ NAV ============ -->
+<div class="nav"><div class="nav-in">
+  <a class="brand" href="#top">PlugV2V</a>
+  <nav class="nav-links">
+    <a href="#abstract">Abstract</a>
+    <a href="#framework">Framework</a>
+    <a href="#results">Results</a>
+    <a href="#demos">Demos</a>
+    <a href="#bibtex">BibTeX</a>
+  </nav>
+</div></div>
+
+<!-- ============ HERO ============ -->
+<header class="hero" id="top"><div class="hero-in">
+  <div>
+    <span class="pill">Under review · anonymous submission</span>
+    <h1><span class="nm">PlugV2V</span>: A Plug-In Vision-Language-Model-Based Semantic Cooperation Agent for Autonomous Driving</h1>
+    <p class="lede">Cooperation added to a driving stack it knows nothing about — through an interface
+    <b>four values wide</b>, at <b>one thirtieth</b> of the control rate, with <b>no retraining</b>.</p>
+
+    <div class="btns">
+      <a class="btn primary" href="#demos">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Watch demos</a>
+      <span class="btn soon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h11l5 5v11H4z"/></svg>Paper — under review</span>
+      <span class="btn soon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l-6-6 6-6M15 6l6 6-6 6"/></svg>Code — on acceptance</span>
+    </div>
+    <p class="anon">Authors and affiliations withheld for double-blind review.</p>
   </div>
 
-  <h2>Abstract</h2>
-  <p>Coming soon.</p>
+  <figure class="teaser">
+    <img src="assets/00_concept.jpg" alt="Centralized, decentralized, and PlugV2V approaches to language-based V2V cooperation compared.">
+    <figcaption><b>Three ways to coordinate.</b> <i>Left:</i> centralized methods aggregate vehicle data in
+    one coordinator that decides for all vehicles. <i>Center:</i> decentralized methods negotiate among
+    vehicles, but execute the agreement through one fixed driving stack. <i>Right:</i> PlugV2V combines
+    decentralized negotiation, strategy knowledge and shared observations, while the same agreement
+    interfaces with modular, end-to-end and vision-language-action stacks.</figcaption>
+  </figure>
+</div></header>
 
-  <h2>Code</h2>
-  <p>Coming soon.</p>
+<!-- ============ ABSTRACT ============ -->
+<section id="abstract">
+  <div class="h-lab">01 — Abstract</div>
+  <h2>Cooperation as a low-rate semantic layer</h2>
 
-  <footer>Anonymous submission &middot; page kept anonymous during review.</footer>
-</main>
+  <div class="tldr">
+    <div class="k">TL;DR</div>
+    <p>A vision-language model fuses compact V2V messages with each vehicle's own cameras, groups the
+    vehicles that actually conflict, and lets each group negotiate a passing order. The agreement leaves
+    as <b>one of four target-speed tokens</b>, so the same agent supervises a rule-based planner, an
+    end-to-end model and a vision-language-action model <b>without retraining any of them</b>.</p>
+  </div>
+
+  <div class="narrow cols2">
+    <p>Interactive traffic requires vehicles to coordinate passing order, merging gaps and yielding
+    behaviour, yet existing language-based cooperation methods provide only part of the required
+    cooperation stack and are typically tied to a single driving backend. They rarely combine
+    ego-centric cooperative observations, explicit strategy knowledge, multi-agent negotiation and
+    bounded execution within one framework.</p>
+
+    <p>We present <b>PlugV2V</b>, a backend-agnostic plug-in/plug-out semantic V2V cooperation agent
+    that uses a vision-language model to fuse compact V2V state messages with local camera observations,
+    form conflict groups, and negotiate schema-checked target-speed actions at low frequency while the
+    host driving stack retains high-frequency control. Lightweight backend adapters connect the same
+    agent to rule-based, end-to-end and vision-language-action driving stacks.</p>
+
+    <p>On the 46-route CARLA InterDrive benchmark, cooperative observations, strategy knowledge and
+    negotiation provide complementary gains, together improving the driving score of a rule-based
+    planner from <b>85.72 to 96.57</b>. PlugV2V also outperforms the strongest reported method on the
+    same benchmark in both evaluation modes, with and without non-communicating traffic, exceeding the
+    previous best by <b>6.45</b> and <b>4.04</b> driving-score points. Across heterogeneous backends it
+    improves rule-based, end-to-end and vision-language-action stacks by approximately <b>11, 11 and
+    24</b> points respectively.</p>
+  </div>
+</section>
+
+<!-- ============ CONTRIBUTIONS ============ -->
+<section id="contributions">
+  <div class="h-lab">02 — Contributions</div>
+  <h2>Three things this paper adds</h2>
+  <div class="cards">
+    <div class="card">
+      <div class="n">01</div>
+      <h3>A semantic cooperation agent</h3>
+      <p>A vision-language model combines multi-vehicle observations, explicit strategy knowledge,
+      conflict grouping and bounded negotiation to produce schema-checked group agreements — decentralised,
+      with no roadside unit and no central planner.</p>
+    </div>
+    <div class="card">
+      <div class="n">02</div>
+      <h3>A plug-in/plug-out interface</h3>
+      <p>Four target-speed tokens and a small per-backend adapter. The same agent supervises rule-based,
+      end-to-end and vision-language-action stacks. Remove it and each host returns to its own policy,
+      exactly.</p>
+    </div>
+    <div class="card">
+      <div class="n">03</div>
+      <h3>A comprehensive evaluation</h3>
+      <p>Hosted and open-source backbones, ablations of every cooperation component and strategy
+      knowledge, and plug-in versus plug-out on three heterogeneous backends across 92 closed-loop tests.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FRAMEWORK ============ -->
+<section id="framework">
+  <div class="h-lab">03 — Framework</div>
+  <h2>A narrow interface, deliberately</h2>
+
+  <figure class="wide">
+    <img src="assets/Framework.jpg" alt="PlugV2V framework: priority assessment, grouping and negotiation, action interface and adapters.">
+    <figcaption><b>Overview of the framework.</b> <b>Priority assessment</b> encodes each vehicle's route
+    and received messages into a scene description and queries the model with it alongside that vehicle's
+    own camera views, returning a local priority. <b>Grouping and negotiation</b> forms conflict groups,
+    runs bounded discussion until a group agrees on a target-speed action map, and schema-checks the
+    result; ungrouped vehicles take the single-vehicle path instead. <b>Action interface and adapters</b>
+    overlays the validated actions on a rule-based, end-to-end or vision-language-action stack.</figcaption>
+  </figure>
+
+  <div class="narrow" style="margin-bottom:4px">
+    <p>Each vehicle scores itself and names the neighbours it believes it conflicts with. Those reports
+    are symmetrised into a graph whose connected components become independent negotiation groups, so
+    vehicles that cannot affect each other never enter the same conversation. Members of a group exchange
+    proposals for at most <b>K</b> rounds, and the agreement leaves as a single token.</p>
+  </div>
+
+  <div class="tokrow">
+    <span class="tok t0">TARGET_BRAKE</span>
+    <span class="tok slow">TARGET_SLOW</span>
+    <span class="tok norm">TARGET_NORMAL</span>
+    <span class="tok fast">TARGET_FAST</span>
+  </div>
+
+  <div class="spec">
+    <span><b>H = 30</b> frames between cycles</span>
+    <span><b>0.67 Hz</b> against a 20 Hz control loop</span>
+    <span><b>K = 2</b> negotiation rounds</span>
+    <span><b>R = 100 m</b> cooperative range</span>
+  </div>
+
+  <div class="narrow" style="margin-top:22px">
+    <p>Between cooperation cycles the host is in sole control. That is what makes the agent removable:
+    unplugging it restores the unmodified stack rather than leaving a gap where a policy used to be.</p>
+  </div>
+
+
+</section>
+
+<!-- ============ RESULTS ============ -->
+<section id="results">
+  <div class="h-lab">04 — Results</div>
+  <h2>92 closed-loop tests on InterDrive</h2>
+
+  <div class="narrow">
+    <p>CARLA 0.9.10.1 with the InterDrive multi-ego routes: 46 configurations across Town05–Town07,
+    split into 18 intersection-crossing, 20 lane-merge and 8 lane-change cases. Each route runs with
+    cooperative vehicles only and again with additional non-communicating traffic. Most routes use two
+    connected vehicles, rising to six to eight in dense intersections and highway lane changes.</p>
+  </div>
+
+  <h3 style="font-size:19px; margin:26px 0 6px">Comparison with the state of the art</h3>
+  <div class="demo-ctl" style="margin:10px 0 12px">
+    <span class="seg-lab">Traffic</span>
+    <div class="seg" id="segTraffic">
+      <button data-v="0" aria-pressed="true">Without background</button>
+      <button data-v="1" aria-pressed="false">With NPC traffic</button>
+    </div>
+    <span class="seg-lab">Split</span>
+    <div class="seg" id="segSplit">
+      <button data-v="0" aria-pressed="true">Total</button>
+      <button data-v="1" aria-pressed="false">Intersection</button>
+      <button data-v="2" aria-pressed="false">Lane merge</button>
+      <button data-v="3" aria-pressed="false">Lane change</button>
+    </div>
+  </div>
+  <div class="tbl-wrap"><table id="sotaTbl">
+    <thead><tr>
+      <th data-k="-1">Method</th><th data-k="-2">Type</th>
+      <th class="sortable" data-k="0">DS ↑</th><th class="sortable" data-k="1">RC ↑</th>
+      <th class="sortable" data-k="2">IS ↑</th><th class="sortable" data-k="3">SR ↑</th>
+    </tr></thead>
+    <tbody id="sotaBody"></tbody>
+  </table></div>
+  <p class="cap">Click a metric to sort; the split selector switches between the overall score and the
+  three scenario families. DS driving score, RC route completion, IS infraction score, SR success rate;
+  higher is better throughout. Competing numbers are as reported by their authors on the same benchmark;
+  the rule-based, TCP and SimLingo rows are reproduced locally.</p>
+
+  <h3 style="font-size:19px; margin:30px 0 6px">The parts are complementary</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Configuration</th><th>DS ↑</th><th>RC ↑</th><th>IS ↑</th><th>SR ↑</th></tr></thead>
+    <tbody>
+      <tr><td>Rule-based planner alone</td><td class="num">85.72</td><td class="num">94.12</td><td class="num">0.91</td><td class="num">0.73</td></tr>
+      <tr><td>+ single-vehicle query</td><td class="num">87.36</td><td class="num">94.32</td><td class="num">0.93</td><td class="num">0.63</td></tr>
+      <tr><td>+ cooperative observations</td><td class="num">78.57</td><td class="num">79.32</td><td class="num">0.99</td><td class="num">0.61</td></tr>
+      <tr><td>+ strategy knowledge</td><td class="num">87.41</td><td class="num">95.27</td><td class="num">0.91</td><td class="num">0.74</td></tr>
+      <tr><td>+ observations + strategy</td><td class="num">92.97</td><td class="num">95.75</td><td class="num">0.97</td><td class="num">0.74</td></tr>
+      <tr class="ours"><td>+ grouping and negotiation (full)</td><td class="num">96.57</td><td class="num">96.57</td><td class="num">1.00</td><td class="num">0.87</td></tr>
+    </tbody>
+  </table></div>
+  <p class="cap">Observations without strategy knowledge are safer but over-cautious — the agent sees the
+  other vehicles but has no rule for who yields. The two only pay off together.</p>
+
+  <h3 style="font-size:19px; margin:30px 0 6px">Backbone study</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>VLM backbone</th><th>DS ↑</th><th>RC ↑</th><th>IS ↑</th><th>SR ↑</th><th>Serving</th></tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="6">Hosted</td></tr>
+      <tr class="ours"><td>gemini-2.5-flash</td><td class="num">96.57</td><td class="num">96.57</td><td class="num">1.00</td><td class="num">0.87</td><td class="num">API</td></tr>
+      <tr><td>kimi-k2.6</td><td class="num">95.26</td><td class="num">95.45</td><td class="num">1.00</td><td class="num">0.85</td><td class="num">API</td></tr>
+      <tr><td>qwen3.7-plus</td><td class="num">93.20</td><td class="num">95.48</td><td class="num">0.97</td><td class="num">0.85</td><td class="num">API</td></tr>
+      <tr><td>qwen3.6-flash</td><td class="num">92.12</td><td class="num">97.54</td><td class="num">0.94</td><td class="num">0.83</td><td class="num">API</td></tr>
+      <tr><td>kimi-k2.5</td><td class="num">89.84</td><td class="num">94.19</td><td class="num">0.95</td><td class="num">0.74</td><td class="num">API</td></tr>
+      <tr class="grp"><td colspan="6">Open-source · one consumer GPU</td></tr>
+      <tr><td>Qwen3-VL-8B</td><td class="num">86.57</td><td class="num">93.49</td><td class="num">0.93</td><td class="num">0.65</td><td class="num">16.3 GB</td></tr>
+      <tr><td>Qwen3-VL-4B</td><td class="num">84.16</td><td class="num">92.51</td><td class="num">0.91</td><td class="num">0.67</td><td class="num">8.3 GB</td></tr>
+      <tr><td>Qwen3-VL-2B</td><td class="num">56.20</td><td class="num">59.10</td><td class="num">0.96</td><td class="num">0.48</td><td class="num">4.0 GB</td></tr>
+    </tbody>
+  </table></div>
+  <p class="cap">The smallest model does not fail at driving judgement so much as at holding the output
+  schema: once a response cannot be validated the whole cooperation cycle aborts and every vehicle holds
+  its previous token, which is why completion collapses while the infraction score stays high.</p>
+
+  <figure class="wide">
+    <img src="assets/experiment3_shared_v4.jpg" alt="Driving score, route completion, infraction score and success rate for each host with and without PlugV2V.">
+    <figcaption><b>Plug-in versus plug-out.</b> The same agent, unchanged, attached to three different
+    hosts. Only the small backend adapter differs.</figcaption>
+  </figure>
+
+  <figure class="wide">
+    <img src="assets/qualitative_bev.jpg" alt="Five matched simulation times at an eight-vehicle intersection, with and without the agent attached.">
+    <figcaption><b>What it does to traffic.</b> One eight-vehicle intersection, five matched simulation
+    times, agent removed (top) and attached (bottom). Both rows are the host's own bird's-eye output;
+    colour marks a vehicle's conflict group and a vehicle in no group gets no box. Under a shared
+    6.5 m/s limit the planner alone crawls below 3.3 m/s, whereas the agent stops vehicles outright more
+    often and then lets them cross at full speed. Explicit yielding replaces continuous crawling.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ DEMOS ============ -->
+<section id="demos">
+  <div class="h-lab">05 — Closed-loop runs</div>
+  <h2>Watch it negotiate</h2>
+  <div class="narrow">
+    <p>Thirty scenarios from the InterDrive benchmark, five per category in each traffic condition,
+    each shown twice: the rule-based host alone, and the same host with the agent attached. Both clips
+    follow <b>the same vehicle</b> from the same spawn point, and both are the host's own bird's-eye output,
+    recorded frame by frame during evaluation. Routes are those where the agent reaches a driving score of
+    95 or more, ordered by the gain over the planner alone; the chip suffix gives both scores. Backbone is
+    <b>qwen3.8:27b</b>, a 27B open-weight model served on a single workstation.</p>
+  </div>
+
+  <div class="demo-ctl">
+    <span class="seg-lab">Category</span>
+    <div class="seg" id="segCat">
+      <button data-v="IC" aria-pressed="true">Intersection</button>
+      <button data-v="LM" aria-pressed="false">Lane merge</button>
+      <button data-v="LC" aria-pressed="false">Lane change</button>
+    </div>
+    <span class="seg-lab">Traffic</span>
+    <div class="seg" id="segCond">
+      <button data-v="nonpc" aria-pressed="true">Cooperative only</button>
+      <button data-v="npc" aria-pressed="false">With background</button>
+    </div>
+  </div>
+  <div class="seg routes" id="segRoute" style="margin-bottom:18px"></div>
+
+  <div class="syncbar">
+    <button id="btnPlay" class="sbtn primary" type="button">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><span>Play both</span></button>
+    <button id="btnRestart" class="sbtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Restart both</button>
+    <span class="synchint" id="syncHint"></span>
+  </div>
+
+  <div class="pair">
+    <div class="pane">
+      <div class="phd">Agent removed <span>rule-based planner</span></div>
+      <video id="vidBase" controls muted loop playsinline preload="metadata"></video>
+    </div>
+    <div class="pane">
+      <div class="phd on">Agent attached <span>PlugV2V</span></div>
+      <video id="vidPlug" controls muted loop playsinline preload="metadata"></video>
+    </div>
+  </div>
+  <p class="cap" id="pairCap"></p>
+</section>
+
+<!-- ============ BIBTEX ============ -->
+<section id="bibtex">
+  <div class="h-lab">06 — Citation</div>
+  <h2>BibTeX</h2>
+<pre class="bib">@inproceedings{plugv2v,
+  title     = {PlugV2V: A Plug-In Vision-Language-Model-Based Semantic
+               Cooperation Agent for Autonomous Driving},
+  author    = {Anonymous},
+  booktitle = {Under review},
+  year      = {2027}
+}</pre>
+</section>
+
+<footer><div class="foot-in">Anonymous submission · page kept anonymous during review.</div></footer>
+
+<script>
+var SOTA=[["Rule-based planner", "", "base", [85.72, 94.12, 0.91, 0.73, 76.96, 88.13, 0.88, 0.61, 100.0, 100.0, 1.0, 1.0, 69.72, 92.88, 0.76, 0.37], [76.87, 83.46, 0.92, 0.46, 60.52, 73.8, 0.84, 0.28, 90.72, 90.72, 1.0, 0.7, 79.02, 87.02, 0.92, 0.25]], ["VAD", "ICCV'23", "ego", [25.37, 75.0, 0.33, 0.02, 15.49, 54.72, 0.29, 0.0, 37.24, 92.85, 0.4, 0.05, 17.93, 76.0, 0.26, 0.0], [25.18, 75.66, 0.31, 0.02, 22.13, 61.31, 0.32, 0.0, 35.1, 88.23, 0.39, 0.05, 7.24, 76.56, 0.09, 0.0]], ["UniAD", "CVPR'23", "ego", [35.17, 88.3, 0.38, 0.11, 37.24, 91.63, 0.41, 0.11, 42.5, 84.41, 0.47, 0.15, 12.19, 90.57, 0.12, 0.0], [37.13, 88.71, 0.41, 0.11, 37.45, 83.52, 0.44, 0.06, 48.29, 91.33, 0.52, 0.2, 8.48, 93.82, 0.09, 0.0]], ["TCP", "NeurIPS'22", "ego", [73.62, 91.18, 0.81, 0.59, 73.91, 80.48, 0.89, 0.5, 83.98, 97.49, 0.86, 0.75, 47.08, 99.5, 0.47, 0.38], [70.32, 89.8, 0.78, 0.46, 66.94, 79.74, 0.84, 0.39, 82.31, 95.75, 0.85, 0.6, 47.97, 97.59, 0.49, 0.25]], ["LMDrive", "CVPR'24", "ego", [48.83, 58.02, 0.85, 0.2, 44.72, 57.94, 0.79, 0.17, 60.88, 69.43, 0.86, 0.3, 27.96, 29.7, 0.95, 0.0], [49.95, 61.61, 0.84, 0.13, 47.65, 59.34, 0.81, 0.0, 54.12, 67.1, 0.85, 0.2, 44.69, 53.02, 0.87, 0.25]], ["SimLingo", "CVPR'25", "ego", [44.03, 78.62, 0.59, 0.26, 32.63, 73.82, 0.48, 0.11, 63.6, 76.57, 0.83, 0.45, 20.78, 94.52, 0.21, 0.13], [45.0, 79.36, 0.57, 0.28, 33.94, 79.13, 0.42, 0.17, 64.05, 76.04, 0.85, 0.45, 22.29, 88.15, 0.23, 0.13]], ["CoDriving", "T-PAMI'25", "coop", [74.13, 96.31, 0.76, 0.57, 66.32, 90.57, 0.71, 0.61, 96.18, 100.0, 0.96, 0.75, 36.57, 100.0, 0.37, 0.0], [64.5, 93.58, 0.67, 0.47, 54.64, 88.08, 0.59, 0.33, 88.07, 96.55, 0.91, 0.73, 27.78, 98.51, 0.28, 0.13]], ["CoLMDriver", "ICCV'25", "coop", [88.53, 94.05, 0.9, 0.8, 82.07, 88.78, 0.86, 0.72, 98.27, 99.93, 0.98, 0.92, 59.21, 82.5, 0.6, 0.5], [77.09, 92.02, 0.8, 0.63, 63.06, 82.55, 0.7, 0.44, 94.0, 100.0, 0.94, 0.85, 66.38, 93.41, 0.68, 0.5]], ["CoLMIN", "TMM'26", "coop", [90.12, 94.36, 0.92, 0.81, 90.71, 93.97, 0.94, 0.78, 98.75, 100.0, 0.99, 0.9, 67.2, 81.12, 0.68, 0.63], [78.93, 92.79, 0.8, 0.67, 66.47, 89.17, 0.7, 0.53, 94.11, 100.0, 0.94, 0.85, 67.45, 82.45, 0.68, 0.63]], ["PlugV2V-Rule", "ours", "ours", [96.57, 96.57, 1.0, 0.87, 91.23, 91.23, 1.0, 0.67, 100.0, 100.0, 1.0, 1.0, 100.0, 100.0, 1.0, 1.0], [82.97, 82.97, 1.0, 0.52, 75.06, 75.06, 1.0, 0.33, 88.14, 88.14, 1.0, 0.6, 87.83, 87.83, 1.0, 0.75]]];
+(function(){
+  // Comparison table: one data array, traffic x split selectors, click-to-sort headers.
+  var TYPE={base:"Baseline", ego:"E2E / VLA", coop:"Cooperative", ours:"Ours"};
+  var traffic=0, split=0, sortK=null, desc=true;
+  var body=document.getElementById("sotaBody"); if(!body) return;
+  function render(){
+    var rows=SOTA.map(function(r,idx){
+      return {name:r[0], venue:r[1], cls:r[2], v:r[3+traffic].slice(split*4, split*4+4), idx:idx};
+    });
+    if(sortK!==null){ rows.sort(function(a,b){ var d=a.v[sortK]-b.v[sortK]; return desc? -d : d; }); }
+    body.innerHTML=rows.map(function(r){
+      var venue=(r.venue && r.venue!=="ours") ? '<span class="venue">'+r.venue+'</span>' : '';
+      var nm=r.cls==="ours" ? "<b>"+r.name+"</b>" : r.name;
+      return '<tr'+(r.cls==="ours"?' class="ours"':'')+'><td>'+nm+venue+'</td>'+
+        '<td><span class="type'+(r.cls==="ours"?' ours':'')+'">'+TYPE[r.cls]+'</span></td>'+
+        r.v.map(function(x){ return '<td class="num">'+x.toFixed(2)+'</td>'; }).join('')+'</tr>';
+    }).join('');
+    [].forEach.call(document.querySelectorAll("#sotaTbl th.sortable"),function(th){
+      var k=+th.getAttribute("data-k");
+      th.classList.toggle("on", sortK===k);
+      var base=th.textContent.replace(/[▼▲]/g,"").trim();
+      th.innerHTML=base+(sortK===k? '<span class="ar">'+(desc?"▼":"▲")+'</span>' : '');
+    });
+  }
+  function segWire(id,set){
+    var el=document.getElementById(id); if(!el) return;
+    el.addEventListener("click",function(e){
+      var b=e.target.closest("button"); if(!b) return;
+      [].forEach.call(this.querySelectorAll("button"),function(x){x.setAttribute("aria-pressed","false");});
+      b.setAttribute("aria-pressed","true"); set(+b.getAttribute("data-v")); render();
+    });
+  }
+  segWire("segTraffic",function(v){traffic=v;});
+  segWire("segSplit",function(v){split=v;});
+  document.getElementById("sotaTbl").addEventListener("click",function(e){
+    var th=e.target.closest("th.sortable"); if(!th) return;
+    var k=+th.getAttribute("data-k");
+    if(sortK===k){ desc=!desc; } else { sortK=k; desc=true; }
+    render();
+  });
+  render();
+})();
+
+var GAL={"IC": {"nonpc": [{"route": "r23_town05_ins_oppo", "file": "IC_nonpc_r23_town05_ins_oppo.mp4", "ego": 0, "n": 3, "bds": 21.6, "pds": 100.0}, {"route": "r13_town05_ins_sl", "file": "IC_nonpc_r13_town05_ins_sl.mp4", "ego": 1, "n": 2, "bds": 29.6, "pds": 100.0}, {"route": "r44_town05_ins_chaos", "file": "IC_nonpc_r44_town05_ins_chaos.mp4", "ego": 4, "n": 8, "bds": 31.3, "pds": 95.6}, {"route": "r26_town05_ins_chaos", "file": "IC_nonpc_r26_town05_ins_chaos.mp4", "ego": 5, "n": 6, "bds": 100.0, "pds": 100.0}, {"route": "r15_town07_ins_sl", "file": "IC_nonpc_r15_town07_ins_sl.mp4", "ego": 1, "n": 2, "bds": 100.0, "pds": 100.0}], "npc": [{"route": "r13_town05_ins_sl", "file": "IC_npc_r13_town05_ins_sl.mp4", "ego": 1, "n": 2, "bds": 29.9, "pds": 100.0}, {"route": "r8_town05_ins_ss", "file": "IC_npc_r8_town05_ins_ss.mp4", "ego": 1, "n": 2, "bds": 39.9, "pds": 100.0}, {"route": "r11_town05_ins_sl", "file": "IC_npc_r11_town05_ins_sl.mp4", "ego": 0, "n": 2, "bds": 61.5, "pds": 100.0}, {"route": "r7_town05_ins_ss", "file": "IC_npc_r7_town05_ins_ss.mp4", "ego": 0, "n": 2, "bds": 100.0, "pds": 100.0}, {"route": "r16_town05_ins_sl", "file": "IC_npc_r16_town05_ins_sl.mp4", "ego": 1, "n": 2, "bds": 100.0, "pds": 100.0}]}, "LM": {"nonpc": [{"route": "r42_town05_ins_rl", "file": "LM_nonpc_r42_town05_ins_rl.mp4", "ego": 3, "n": 4, "bds": 100.0, "pds": 100.0}, {"route": "r34_town05_ins_rl", "file": "LM_nonpc_r34_town05_ins_rl.mp4", "ego": 1, "n": 4, "bds": 100.0, "pds": 100.0}, {"route": "r33_town05_ins_rl", "file": "LM_nonpc_r33_town05_ins_rl.mp4", "ego": 3, "n": 4, "bds": 100.0, "pds": 100.0}, {"route": "r45_town06_hw_merge", "file": "LM_nonpc_r45_town06_hw_merge.mp4", "ego": 2, "n": 4, "bds": 100.0, "pds": 100.0}, {"route": "r29_town06_hw_merge", "file": "LM_nonpc_r29_town06_hw_merge.mp4", "ego": 2, "n": 4, "bds": 100.0, "pds": 100.0}], "npc": [{"route": "r34_town05_ins_rl", "file": "LM_npc_r34_town05_ins_rl.mp4", "ego": 1, "n": 4, "bds": 91.5, "pds": 100.0}, {"route": "r29_town06_hw_merge", "file": "LM_npc_r29_town06_hw_merge.mp4", "ego": 2, "n": 4, "bds": 100.0, "pds": 100.0}, {"route": "r45_town06_hw_merge", "file": "LM_npc_r45_town06_hw_merge.mp4", "ego": 2, "n": 4, "bds": 100.0, "pds": 100.0}, {"route": "r30_town06_hw_merge", "file": "LM_npc_r30_town06_hw_merge.mp4", "ego": 2, "n": 4, "bds": 100.0, "pds": 100.0}, {"route": "r24_town05_ins_rl", "file": "LM_npc_r24_town05_ins_rl.mp4", "ego": 2, "n": 3, "bds": 100.0, "pds": 100.0}]}, "LC": {"nonpc": [{"route": "r46_town06_hw_c", "file": "LC_nonpc_r46_town06_hw_c.mp4", "ego": 6, "n": 7, "bds": 32.2, "pds": 100.0}, {"route": "r43_town05_ins_crosschange", "file": "LC_nonpc_r43_town05_ins_crosschange.mp4", "ego": 2, "n": 4, "bds": 36.0, "pds": 100.0}, {"route": "r39_town06_hw_c", "file": "LC_nonpc_r39_town06_hw_c.mp4", "ego": 3, "n": 8, "bds": 75.0, "pds": 100.0}, {"route": "r28_town06_hw_c", "file": "LC_nonpc_r28_town06_hw_c.mp4", "ego": 1, "n": 6, "bds": 78.6, "pds": 100.0}, {"route": "r40_town06_hw_c", "file": "LC_nonpc_r40_town06_hw_c.mp4", "ego": 3, "n": 8, "bds": 100.0, "pds": 100.0}], "npc": [{"route": "r39_town06_hw_c", "file": "LC_npc_r39_town06_hw_c.mp4", "ego": 4, "n": 8, "bds": 75.0, "pds": 100.0}, {"route": "r28_town06_hw_c", "file": "LC_npc_r28_town06_hw_c.mp4", "ego": 4, "n": 6, "bds": 78.6, "pds": 100.0}, {"route": "r46_town06_hw_c", "file": "LC_npc_r46_town06_hw_c.mp4", "ego": 6, "n": 7, "bds": 89.5, "pds": 100.0}, {"route": "r40_town06_hw_c", "file": "LC_npc_r40_town06_hw_c.mp4", "ego": 3, "n": 8, "bds": 100.0, "pds": 100.0}, {"route": "r43_town05_ins_crosschange", "file": "LC_npc_r43_town05_ins_crosschange.mp4", "ego": 2, "n": 4, "bds": 100.0, "pds": 100.0}]}};
+
+(function(){
+  var CATN={IC:"Intersection crossing",LM:"Lane merge",LC:"Lane change"};
+  var cat="IC", cond="nonpc", idx=0;
+  var vb=document.getElementById("vidBase"), vp=document.getElementById("vidPlug"),
+      rs=document.getElementById("segRoute"), cap=document.getElementById("pairCap"),
+      btnPlay=document.getElementById("btnPlay"), btnRestart=document.getElementById("btnRestart"),
+      hint=document.getElementById("syncHint");
+  function routes(){ return (GAL[cat]&&GAL[cat][cond])||[]; }
+  function paint(){
+    var rr=routes(); if(idx>=rr.length) idx=0;
+    rs.innerHTML=rr.map(function(r,i){
+      var p=r.route.split("_"), sc=p.slice(2).join(" ");
+      return '<button data-i="'+i+'" aria-pressed="'+(i===idx)+'">'+p[0]+' · '+sc+
+        '<span class="chip-ds">'+Math.round(r.bds)+'→'+Math.round(r.pds)+'</span></button>';
+    }).join("");
+    var r=rr[idx]; if(!r) return;
+    vb.src="media/gallery/baseline_"+r.file;
+    vp.src="media/gallery/plugv2v_"+r.file;
+    cap.textContent=CATN[cat]+" · "+(cond==="npc"?"with background traffic":"cooperative vehicles only")
+      +" · route "+r.route+", ego vehicle "+r.ego+" of "+r.n+". Both clips follow this one vehicle. "
+      +"Left: the rule-based host alone, route driving score "+r.bds.toFixed(1)
+      +". Right: the same vehicle with PlugV2V attached, driving score "+r.pds.toFixed(1)
+      +"; colour marks each vehicle's conflict group.";
+    setPlayLabel(false);
+    // the two runs genuinely differ in length - that gap is the result, so say it
+    var upd=function(){
+      if(vb.duration && vp.duration){
+        hint.textContent=vb.duration.toFixed(0)+"s vs "+vp.duration.toFixed(0)+"s";
+      }
+    };
+    vb.onloadedmetadata=upd; vp.onloadedmetadata=upd; upd();
+  }
+
+  function setPlayLabel(playing){
+    btnPlay.querySelector("span").textContent = playing ? "Pause both" : "Play both";
+    btnPlay.classList.toggle("primary", !playing);
+    btnPlay.querySelector("svg").innerHTML = playing
+      ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>'
+      : '<path d="M8 5v14l11-7z"/>';
+  }
+  function bothPlaying(){ return !vb.paused && !vp.paused; }
+  btnPlay.addEventListener("click",function(){
+    if(bothPlaying()){ vb.pause(); vp.pause(); setPlayLabel(false); }
+    else { vb.play().catch(function(){}); vp.play().catch(function(){}); setPlayLabel(true); }
+  });
+  btnRestart.addEventListener("click",function(){
+    vb.currentTime=0; vp.currentTime=0;
+    vb.play().catch(function(){}); vp.play().catch(function(){}); setPlayLabel(true);
+  });
+  // keep the label honest if either is driven by its own native controls
+  [vb,vp].forEach(function(v){
+    v.addEventListener("play",  function(){ if(bothPlaying()) setPlayLabel(true); });
+    v.addEventListener("pause", function(){ setPlayLabel(false); });
+  });
+  function wire(id,set){
+    var el=document.getElementById(id); if(!el) return;
+    el.addEventListener("click",function(e){
+      var b=e.target.closest("button"); if(!b) return;
+      [].forEach.call(this.querySelectorAll("button"),function(x){x.setAttribute("aria-pressed","false");});
+      b.setAttribute("aria-pressed","true"); set(b.getAttribute("data-v")); idx=0; paint();
+    });
+  }
+  wire("segCat",function(v){cat=v;}); wire("segCond",function(v){cond=v;});
+  rs.addEventListener("click",function(e){
+    var b=e.target.closest("button"); if(!b) return;
+    idx=+b.getAttribute("data-i"); paint();
+  });
+  paint();
+})();
+</script>
 </body>
 </html>

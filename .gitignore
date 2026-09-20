@@ -1,3 +1,12 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# Local-only: build scaffolding and archived footage, not part of the site
+tools/
+media_orig/
+live_index.html
+
+# Unreferenced hero clips superseded by the paired gallery
+media/*.mp4
+media/*.jpg
